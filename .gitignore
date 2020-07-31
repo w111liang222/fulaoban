@@ -1,0 +1,4 @@
+*.pyc
+*.pyo
+.vscode
+lonet_log/*

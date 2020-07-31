@@ -1,0 +1,10 @@
+# This file is covered by the LICENSE file in the root of this project.
+split: # sequence numbers
+  train: #must be sorted
+    - 0
+    - 1
+    - 2
+  valid:
+    - 3
+  test:
+    - 4
