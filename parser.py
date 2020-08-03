@@ -135,9 +135,9 @@ class SlamKitti(Dataset):
         Rm0 = R.from_rotvec(pose0[3:])
         Rm1 = R.from_rotvec(pose1[3:])
         Rm0_inv = Rm0.inv()
-        t0_inv = np.diagonal(-(Rm0_inv.as_matrix() * pose0[0:3]), offset=0)
-        delta_t = t0_inv + \
-            np.diagonal(Rm0_inv.as_matrix() * pose1[0:3], offset=0)
+
+        t0_inv = -np.dot(Rm0_inv.as_matrix(), pose0[0:3])
+        delta_t = t0_inv + np.dot(Rm0_inv.as_matrix(), pose1[0:3])
         delta_r = (Rm0_inv*Rm1).as_rotvec()
         delta_pose = np.concatenate([delta_t, delta_r])
 

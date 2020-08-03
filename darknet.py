@@ -111,12 +111,18 @@ class Backbone(nn.Module):
                                                stride=1, bn_d=self.bn_d, use_res=False)
         self.dec4_conv2 = self._make_enc_layer(None, [128, 32], 0,
                                                stride=1, bn_d=self.bn_d, use_res=False)
+        self.dec4_max_pool1 = self._make_max_poll_layer(
+            [32, 32], stride=2, bn_d=self.bn_d)
+        self.dec4_max_pool2 = self._make_max_poll_layer(
+            [32, 32], stride=2, bn_d=self.bn_d)
+        self.dec4_conv3 = self._make_enc_layer(None, [32, 16], 0,
+                                               stride=1, bn_d=self.bn_d, use_res=False)
 
         # for a bit of fun
         self.dropout = nn.Dropout2d(self.drop_prob)
 
         # last channels
-        self.last_channels = 128
+        self.last_channels = 16
 
     # make layer useful function
     def _make_enc_layer(self, block, planes, blocks, stride, bn_d=0.1, use_res=True):
@@ -136,6 +142,18 @@ class Backbone(nn.Module):
             for i in range(0, blocks):
                 layers.append(("residual_{}".format(i),
                                block(inplanes, planes, bn_d)))
+
+        return nn.Sequential(OrderedDict(layers))
+
+    def _make_max_poll_layer(self, planes, stride, bn_d=0.1):
+        layers = []
+
+        #  downsample
+        layers.append(("maxpool", nn.MaxPool2d(kernel_size=3,
+                                               stride=[1, stride], dilation=1,
+                                               padding=(1, 1))))
+        layers.append(("bn", nn.BatchNorm2d(planes[0], momentum=bn_d)))
+        layers.append(("relu", nn.LeakyReLU(0.1)))
 
         return nn.Sequential(OrderedDict(layers))
 
@@ -190,6 +208,9 @@ class Backbone(nn.Module):
         x = torch.cat((x_skip1, x), 1)
         x, _ = self.run_layer(x, self.dec4_conv1)
         x, _ = self.run_layer(x, self.dec4_conv2)
+        x, _ = self.run_layer(x, self.dec4_max_pool1)
+        x, _ = self.run_layer(x, self.dec4_max_pool2)
+        x, _ = self.run_layer(x, self.dec4_conv3)
 
         return x
 
