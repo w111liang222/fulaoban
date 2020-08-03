@@ -67,7 +67,7 @@ class Trainer():
             "cuda" if torch.cuda.is_available() else "cpu")
         print("Training in device: ", self.device)
         if torch.cuda.is_available() and torch.cuda.device_count() > 0:
-            cudnn.benchmark = False
+            cudnn.benchmark = True
             cudnn.fastest = True
             self.gpu = True
             self.n_gpus = 1
@@ -132,6 +132,9 @@ class Trainer():
                         tag + '/grad', value.grad.data.cpu().numpy(), epoch)
 
     def train(self):
+        print("save initialize model!")
+        self.model_single.save_checkpoint(self.log, suffix="")
+
         best_val_loss = 1e10
         # train for n epochs
         for epoch in range(self.ARCH["train"]["max_epochs"]):
@@ -250,7 +253,7 @@ class Trainer():
                       'Update: {umean:.3e} mean,{ustd:.3e} std | '
                       'Epoch: [{0}][{1}/{2}] | '
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f}) | '
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
+                      'Loss {loss.val:.8f} ({loss.avg:.8f})'.format(
                           epoch, i, len(train_loader), batch_time=batch_time,
                           loss=losses, lr=lr,
                           umean=update_mean, ustd=update_std))
@@ -283,7 +286,9 @@ class Trainer():
 
                 # compute output
                 output = model(scan0, scan1)
-                loss = criterion(output, delta_pose)
+                loss_t = criterion(output[:, 0: 3], delta_pose[:, 0: 3])
+                loss_r = criterion(output[:, 3:], delta_pose[:, 3:])
+                loss = loss_t + loss_r
 
                 # record loss
                 loss = loss.mean()
@@ -295,7 +300,7 @@ class Trainer():
 
             print('Validation set:\n'
                   'Time avg per batch {batch_time.avg:.3f}\n'
-                  'Loss avg {loss.avg:.4f}\n'.format(batch_time=batch_time,
+                  'Loss avg {loss.avg:.8f}\n'.format(batch_time=batch_time,
                                                      loss=losses,
                                                      ))
 

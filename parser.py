@@ -24,11 +24,13 @@ class SlamKitti(Dataset):
                  sequences,     # sequences for this data (e.g. [1,3,4,6])
                  sensor,              # sensor to parse scans from
                  max_points=150000,   # max number of points present in dataset
+                 shuffle=False,
                  gt=True):            # send ground truth?
         # save deats
         self.root = os.path.join(root, "sequences")
         self.sequences = sequences
         self.sensor = sensor
+        self.shuffle = shuffle
         self.sensor_img_H = sensor["img_prop"]["height"]
         self.sensor_img_W = sensor["img_prop"]["width"]
         self.sensor_img_means = torch.tensor(sensor["img_means"],
@@ -125,12 +127,25 @@ class SlamKitti(Dataset):
         return proj, pose_vec
 
     def __getitem__(self, index):
-        for seq_i in self.sequences_scan_num:
-            if index == seq_i:
+        for i, seq_i in enumerate(self.sequences_scan_num):
+            if index == (seq_i - 1):
                 index = index + 1
                 break
-        scan0, pose0 = self.getSingleItem(index - 1)
-        scan1, pose1 = self.getSingleItem(index)
+        for i, seq_i in enumerate(self.sequences_scan_num):
+            if index >= self.sequences_scan_num[i] and index < self.sequences_scan_num[i + 1]:
+                if self.shuffle:
+                    np.random.seed()
+                    next_index = np.random.randint(1, 4) + index
+                else:
+                    next_index = index + 1
+                if next_index >= self.sequences_scan_num[i + 1]:
+                    next_index = self.sequences_scan_num[i + 1] - 1
+                break
+        scan0, pose0 = self.getSingleItem(index)
+        scan1, pose1 = self.getSingleItem(next_index)
+        dist = np.sqrt(np.sum(np.power((pose0[0:3] - pose1[0:3]), 2)))
+        if dist > 15:
+            print('too long distance:', dist)
 
         Rm0 = R.from_rotvec(pose0[3:])
         Rm1 = R.from_rotvec(pose1[3:])
@@ -138,7 +153,7 @@ class SlamKitti(Dataset):
 
         t0_inv = -np.dot(Rm0_inv.as_matrix(), pose0[0:3])
         delta_t = t0_inv + np.dot(Rm0_inv.as_matrix(), pose1[0:3])
-        delta_r = (Rm0_inv*Rm1).as_rotvec()
+        delta_r = (Rm0_inv*Rm1).as_euler('zxy', degrees=True)
         delta_pose = np.concatenate([delta_t, delta_r])
 
         # return
@@ -180,6 +195,7 @@ class Parser():
                                        sequences=self.train_sequences,
                                        sensor=self.sensor,
                                        max_points=max_points,
+                                       shuffle=self.shuffle_train,
                                        gt=self.gt)
 
         self.trainloader = torch.utils.data.DataLoader(self.train_dataset,
@@ -195,6 +211,7 @@ class Parser():
                                        sequences=self.valid_sequences,
                                        sensor=self.sensor,
                                        max_points=max_points,
+                                       shuffle=False,
                                        gt=self.gt)
 
         self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
@@ -211,6 +228,7 @@ class Parser():
                                           sequences=self.test_sequences,
                                           sensor=self.sensor,
                                           max_points=max_points,
+                                          shuffle=False,
                                           gt=False)
 
             self.testloader = torch.utils.data.DataLoader(self.test_dataset,

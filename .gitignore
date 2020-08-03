@@ -2,3 +2,4 @@
 *.pyo
 .vscode
 lonet_log/*
+infer_log/

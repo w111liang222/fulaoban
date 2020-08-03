@@ -3,7 +3,7 @@
 ################################################################################
 train:
   max_epochs: 150
-  lr: 0.005              # sgd learning rate
+  lr: 0.0025             # sgd learning rate
   wup_epochs: 1          # warmup during first XX epochs (can be float)
   momentum: 0.9          # sgd momentum
   lr_decay: 0.99         # learning rate decay per epoch after initial cycle (from min lr)

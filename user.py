@@ -107,12 +107,13 @@ class User():
                     scan0 = scan0.cuda()
                     scan1 = scan1.cuda()
                     delta_pose = delta_pose.cuda(non_blocking=True).float()
-
                 # compute output
                 output = self.model(scan0, scan1)
 
                 # calculate loss
-                loss = self.criterion(output, delta_pose)
+                loss_t = self.criterion(output[:, 0: 3], delta_pose[:, 0: 3])
+                loss_r = self.criterion(output[:, 3:], delta_pose[:, 3:])
+                loss = loss_t + loss_r
                 loss = loss.mean()
                 losses.update(loss)
 
@@ -126,7 +127,7 @@ class User():
 
                 output_np = output.cpu().numpy().reshape(6,)
                 output_t = output_np[0:3]
-                output_r = R.from_rotvec(output_np[3:])
+                output_r = R.from_euler('zxy', output_np[3:], degrees=True)
 
                 last_t = last_t + np.dot(last_r.as_matrix(), output_t)
                 last_r = last_r*output_r
@@ -134,8 +135,8 @@ class User():
                 rt_mat = np.hstack((last_r.as_matrix(), last_t.reshape(3, 1)))
                 rt_vec = rt_mat.reshape(1, 12)
                 all_pose = np.vstack((all_pose, rt_vec))
-                if i > 300:
-                    break
+                # if i > 300:
+                #    break
             # save scan
             path = os.path.join(self.logdir, 'pose.txt')
             np.savetxt(path, all_pose, delimiter=' ')
