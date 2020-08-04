@@ -3,12 +3,12 @@
 ################################################################################
 train:
   max_epochs: 150
-  lr: 0.0025             # sgd learning rate
+  lr: 0.002             # sgd learning rate
   wup_epochs: 1          # warmup during first XX epochs (can be float)
   momentum: 0.9          # sgd momentum
-  lr_decay: 0.99         # learning rate decay per epoch after initial cycle (from min lr)
-  w_decay: 0.0001        # weight decay
-  batch_size: 4          # batch size
+  lr_decay: 0.95         # learning rate decay per epoch after initial cycle (from min lr)
+  w_decay: 0             # weight decay
+  batch_size: 8          # batch size
   report_batch: 1        # every x batches, report loss
   report_epoch: 1        # every x epochs, report validation set
   save_summary: False    # Summary of weight histograms for tensorboard

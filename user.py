@@ -111,9 +111,7 @@ class User():
                 output = self.model(scan0, scan1)
 
                 # calculate loss
-                loss_t = self.criterion(output[:, 0: 3], delta_pose[:, 0: 3])
-                loss_r = self.criterion(output[:, 3:], delta_pose[:, 3:])
-                loss = loss_t + loss_r
+                loss = self.criterion(output, delta_pose)
                 loss = loss.mean()
                 losses.update(loss)
 
@@ -135,8 +133,10 @@ class User():
                 rt_mat = np.hstack((last_r.as_matrix(), last_t.reshape(3, 1)))
                 rt_vec = rt_mat.reshape(1, 12)
                 all_pose = np.vstack((all_pose, rt_vec))
-                # if i > 300:
-                #    break
+                if i > 1000:
+                    path = os.path.join(self.logdir, 'pose.txt')
+                    np.savetxt(path, all_pose, delimiter=' ')
+                    #    break
             # save scan
             path = os.path.join(self.logdir, 'pose.txt')
             np.savetxt(path, all_pose, delimiter=' ')

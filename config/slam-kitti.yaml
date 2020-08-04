@@ -10,9 +10,8 @@ split: # sequence numbers
     - 6
     - 7
     - 9
-    - 10
   valid:
-    - 8
+    - 10
   test:
     - 11
     - 12

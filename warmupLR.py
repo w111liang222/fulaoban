@@ -28,9 +28,9 @@ class warmupLR(toptim._LRScheduler):
                                                  max_lr=self.lr,
                                                  step_size_up=self.warmup_steps,
                                                  step_size_down=self.warmup_steps,
-                                                 cycle_momentum=False,
-                                                 base_momentum=self.momentum,
-                                                 max_momentum=self.momentum)
+                                                 cycle_momentum=False)
+        # base_momentum=self.momentum,
+        # max_momentum=self.momentum)
 
         # our params
         self.last_epoch = -1  # fix for pytorch 1.1 and below

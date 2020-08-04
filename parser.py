@@ -110,7 +110,7 @@ class SlamKitti(Dataset):
         if self.gt:
             pose_vec = pose.open_pose(pose_file)
         else:
-            pose_vec = []
+            pose_vec = np.zeros((1, 6))
 
         # get points and labels
         proj_range = torch.from_numpy(scan.proj_range).clone()
@@ -136,6 +136,7 @@ class SlamKitti(Dataset):
                 if self.shuffle:
                     np.random.seed()
                     next_index = np.random.randint(1, 4) + index
+                    #next_index = 1 + index
                 else:
                     next_index = index + 1
                 if next_index >= self.sequences_scan_num[i + 1]:
@@ -143,9 +144,6 @@ class SlamKitti(Dataset):
                 break
         scan0, pose0 = self.getSingleItem(index)
         scan1, pose1 = self.getSingleItem(next_index)
-        dist = np.sqrt(np.sum(np.power((pose0[0:3] - pose1[0:3]), 2)))
-        if dist > 15:
-            print('too long distance:', dist)
 
         Rm0 = R.from_rotvec(pose0[3:])
         Rm1 = R.from_rotvec(pose1[3:])
@@ -157,7 +155,8 @@ class SlamKitti(Dataset):
         delta_pose = np.concatenate([delta_t, delta_r])
 
         # return
-        return scan0, scan1, delta_pose
+        delta_pose_t = torch.from_numpy(delta_pose).clone()
+        return scan0, scan1, delta_pose_t
 
     def __len__(self):
         return len(self.scan_files) - 1

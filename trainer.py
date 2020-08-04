@@ -100,10 +100,14 @@ class Trainer():
                 {'params': self.model_single.head.parameters()})
 
         # Use SGD optimizer to train
-        self.optimizer = optim.SGD(self.train_dicts,
-                                   lr=self.ARCH["train"]["lr"],
-                                   momentum=self.ARCH["train"]["momentum"],
-                                   weight_decay=self.ARCH["train"]["w_decay"])
+        # self.optimizer = optim.SGD(self.train_dicts,
+        #                           lr=self.ARCH["train"]["lr"],
+        #                           momentum=self.ARCH["train"]["momentum"],
+        #                           weight_decay=self.ARCH["train"]["w_decay"])
+        # Use Adam optimizer to train
+        self.optimizer = optim.RMSprop(self.train_dicts,
+                                       lr=self.ARCH["train"]["lr"],
+                                       weight_decay=self.ARCH["train"]["w_decay"])
 
         # Use warmup learning rate
         # post decay and step sizes come in epochs and we want it in steps
@@ -134,6 +138,11 @@ class Trainer():
     def train(self):
         print("save initialize model!")
         self.model_single.save_checkpoint(self.log, suffix="")
+        print("*" * 80)
+        loss = self.validate(val_loader=self.parser.get_valid_set(),
+                             model=self.model,
+                             criterion=self.criterion)
+        print("*" * 80)
 
         best_val_loss = 1e10
         # train for n epochs
@@ -201,6 +210,8 @@ class Trainer():
         model.train()
 
         end = time.time()
+
+        epsilon = 0.01
         for i, (scan0, scan1, delta_pose) in enumerate(train_loader):
             if not self.multi_gpu and self.gpu:
                 scan0 = scan0.cuda()
@@ -209,11 +220,15 @@ class Trainer():
             if self.gpu:
                 delta_pose = delta_pose.cuda(non_blocking=True).float()
 
+            abs_delta_pose = torch.abs(delta_pose) + epsilon
+
+            delta_pose = torch.div(delta_pose, abs_delta_pose)
             # compute output
             output = model(scan0, scan1)
+            output = torch.div(output, abs_delta_pose)
             loss = criterion(output, delta_pose)
 
-            # compute gradient and do SGD step
+            # compute gradient and do step
             optimizer.zero_grad()
             if self.n_gpus > 1:
                 idx = torch.ones(self.n_gpus).cuda()
@@ -286,9 +301,7 @@ class Trainer():
 
                 # compute output
                 output = model(scan0, scan1)
-                loss_t = criterion(output[:, 0: 3], delta_pose[:, 0: 3])
-                loss_r = criterion(output[:, 3:], delta_pose[:, 3:])
-                loss = loss_t + loss_r
+                loss = criterion(output, delta_pose)
 
                 # record loss
                 loss = loss.mean()

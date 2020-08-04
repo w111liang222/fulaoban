@@ -5,7 +5,8 @@ import imp
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from darknet import Backbone
+#from darknet import Backbone
+from squeezesegV2 import Backbone
 
 
 class Segmentator(nn.Module):
