@@ -11,7 +11,7 @@ split: # sequence numbers
     - 7
     - 9
   valid:
-    - 10
+    - 8
   test:
     - 11
     - 12

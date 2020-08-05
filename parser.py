@@ -126,25 +126,7 @@ class SlamKitti(Dataset):
         proj = proj * proj_mask.float()
         return proj, pose_vec
 
-    def __getitem__(self, index):
-        for i, seq_i in enumerate(self.sequences_scan_num):
-            if index == (seq_i - 1):
-                index = index + 1
-                break
-        for i, seq_i in enumerate(self.sequences_scan_num):
-            if index >= self.sequences_scan_num[i] and index < self.sequences_scan_num[i + 1]:
-                if self.shuffle:
-                    np.random.seed()
-                    next_index = np.random.randint(1, 4) + index
-                    #next_index = 1 + index
-                else:
-                    next_index = index + 1
-                if next_index >= self.sequences_scan_num[i + 1]:
-                    next_index = self.sequences_scan_num[i + 1] - 1
-                break
-        scan0, pose0 = self.getSingleItem(index)
-        scan1, pose1 = self.getSingleItem(next_index)
-
+    def get_delta_pose(self, pose0, pose1):
         Rm0 = R.from_rotvec(pose0[3:])
         Rm1 = R.from_rotvec(pose1[3:])
         Rm0_inv = Rm0.inv()
@@ -156,7 +138,23 @@ class SlamKitti(Dataset):
 
         # return
         delta_pose_t = torch.from_numpy(delta_pose).clone()
-        return scan0, scan1, delta_pose_t
+        return delta_pose_t
+
+    def __getitem__(self, index):
+        for i, seq_i in enumerate(self.sequences_scan_num):
+            if index == (seq_i - 1):
+                index = index - 2
+                break
+            if index == (seq_i - 2):
+                index = index - 1
+                break
+        scan0, pose0 = self.getSingleItem(index)
+        scan1, pose1 = self.getSingleItem(index + 1)
+        scan2, pose2 = self.getSingleItem(index + 2)
+        delta_pose01 = self.get_delta_pose(pose0, pose1)
+        delta_pose02 = self.get_delta_pose(pose1, pose2)
+
+        return scan0, scan1, scan2, delta_pose01, delta_pose02
 
     def __len__(self):
         return len(self.scan_files) - 1

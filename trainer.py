@@ -100,14 +100,11 @@ class Trainer():
                 {'params': self.model_single.head.parameters()})
 
         # Use SGD optimizer to train
-        # self.optimizer = optim.SGD(self.train_dicts,
-        #                           lr=self.ARCH["train"]["lr"],
-        #                           momentum=self.ARCH["train"]["momentum"],
-        #                           weight_decay=self.ARCH["train"]["w_decay"])
+        self.optimizer = optim.SGD(self.train_dicts,
+                                   lr=self.ARCH["train"]["lr"],
+                                   momentum=self.ARCH["train"]["momentum"],
+                                   weight_decay=self.ARCH["train"]["w_decay"])
         # Use Adam optimizer to train
-        self.optimizer = optim.RMSprop(self.train_dicts,
-                                       lr=self.ARCH["train"]["lr"],
-                                       weight_decay=self.ARCH["train"]["w_decay"])
 
         # Use warmup learning rate
         # post decay and step sizes come in epochs and we want it in steps
@@ -211,21 +208,16 @@ class Trainer():
 
         end = time.time()
 
-        epsilon = 0.01
-        for i, (scan0, scan1, delta_pose) in enumerate(train_loader):
+        for i, (scan0, scan1, scan2, delta_pose01, delta_pose02) in enumerate(train_loader):
             if not self.multi_gpu and self.gpu:
                 scan0 = scan0.cuda()
                 scan1 = scan1.cuda()
-                delta_pose = delta_pose.cuda()
+                delta_pose = delta_pose01.cuda()
             if self.gpu:
-                delta_pose = delta_pose.cuda(non_blocking=True).float()
+                delta_pose = delta_pose01.cuda(non_blocking=True).float()
 
-            abs_delta_pose = torch.abs(delta_pose) + epsilon
-
-            delta_pose = torch.div(delta_pose, abs_delta_pose)
             # compute output
             output = model(scan0, scan1)
-            output = torch.div(output, abs_delta_pose)
             loss = criterion(output, delta_pose)
 
             # compute gradient and do step
@@ -291,7 +283,7 @@ class Trainer():
 
         with torch.no_grad():
             end = time.time()
-            for i, (scan0, scan1, delta_pose) in enumerate(val_loader):
+            for i, (scan0, scan1, scan2, delta_pose, _) in enumerate(val_loader):
                 if not self.multi_gpu and self.gpu:
                     scan0 = scan0.cuda()
                     scan1 = scan1.cuda()
