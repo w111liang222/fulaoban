@@ -38,6 +38,12 @@ related work:
       pages={529--537},
       year={2019}
     }
+    @article{chen2020survey,
+      title={A Survey on Deep Learning for Localization and Mapping: Towards the Age of Spatial Machine Intelligence},
+      author={Chen, Changhao and Wang, Bing and Lu, Chris Xiaoxuan and Trigoni, Niki and Markham, Andrew},
+      journal={arXiv preprint arXiv:2006.12567},
+      year={2020}
+    }
 
 ## Publication
 nothing published yet.
